@@ -1,0 +1,18 @@
+type: Handler
+api_version: core/v2
+metadata:
+  created_by: admin
+  name: ansible
+  namespace: default
+spec:
+  command: sensu-ansible-handler --host https://localhost:443 -j "check_restart_sensu" --insecure-skip-tls-verify -i GCP Inventory
+  env_vars:
+  - ANSIBLE_TOKEN='Place your token here'  # Place token from AWX Project
+  - SENSU_LICENSE_FILE=$(sensuctl license info --format json)
+  filters: null
+  handlers: null
+  runtime_assets:
+  - sensu/sensu-ansible-handler
+  secrets: null
+  timeout: 10
+  type: pipe
