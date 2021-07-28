@@ -1,0 +1,16 @@
+---
+- hosts: all
+
+  tasks:
+  
+    - name:  Wait until connection is reachable
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+      
+    - name: restart nginx service
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+      register: servicestatus
