@@ -102,4 +102,29 @@ OS: CentOS 7
    cmd: systemctl enable sensu-backend
 
  > Modify backend.yml file in /etc/sensu and restart sensu-backend again.
+ > Installing sensu agent and configure it to backend.
+ cmd: yum install sensu-go-agent
+ Note: go to /etc/sensu and modify agent.yml file to include backend url
+ 
+ Config to add on agent.yml
+ backend-url:
+  - "ws://publicip:8081"   ( use localhost if you are installing on same server)
+ cache-dir: "/var/cache/sensu/sensu-agent"
+ config-file: "/etc/sensu/agent.yml"
+ 
+ cmd: systemctl restart sensu-agent
+ 
+ 5) Setting up self-healing solution
+ 
+ >> On Tower
+ a) clone https://github.com/rajpk1993/sensu-go-configure and replace agent.yml file
+ b) Configure Inventory on Ansible Tower
+ c) Add credentails to connect to the servers
+ d) Create a new project on Ansible Tower with modified project.
+ e) Finally on Tower create template using above paramters and trigger it to make it is running fine.
+ 
+ >> On Sensu
+*** Still pending ****
+
+ 
 
