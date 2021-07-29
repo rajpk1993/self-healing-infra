@@ -1,25 +1,105 @@
-Pre-requisites:
-
-1) Google Cloud Account # GCP offers free credit to explore and learn.
-2) Sensu # Monitoriong Tool.
-3) Ansible Tower # AWX is the upstream project, I am using OKD Cluster to deploy AWX Tower.
-4) Nginx Web-Server # To implement the and test the solution.
-
 Steps:
 
-1) Lauch a VM Instance in  https://cloud.google.com/gcp/getting-started 
-   Instance configuration:
-   CPU: 8vCPUs
-   Memory: 32
-   Disk Space: 100 GB
-   OS: CentOS 7
-  
-  a) Installing OKD Cluster
-  > Login to the VM and follow below steps
-   cmd: sudo yum -y update
-  > Install and Configure Docker  # Openshift requires dokcer engine on VM to run containers.
-   cmd: sudo yum install -y yum-utils device-mapper-persistent-data lvm2
-        sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-        sudo yum install -y  docker-ce docker-ce-cli containerd.io
-   Note: If you are using standard user then add it to docker group ( usermod -aG docker $USER)
-   
+1) Lauch a VM Instance in https://cloud.google.com/gcp/getting-started
+
+Instance configuration:
+CPU: 8vCPUs
+Memory: 32
+Disk Space: 100 GB
+OS: CentOS 7
+
+2) Installing OKD Cluster
+
+> Login to the VM and follow below steps
+cmd: sudo yum -y update
+> Install and Configure Docker # Openshift requires dokcer engine on VM to run containers.
+cmd: sudo yum install -y yum-utils device-mapper-persistent-data lvm2
+sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+sudo yum install -y docker-ce docker-ce-cli containerd.io
+Note: If you are using standard user then add it to docker group ( usermod -aG docker $USER)
+
+> Create Docker Registry 
+  cmd: sudo mkdir /etc/docker /etc/containers
+
+   cmd: sudo tee /etc/containers/registries.conf<<EOF
+            [registries.insecure]
+            registries = ['172.30.0.0/16']
+            EOF
+
+   cmd:   sudo tee /etc/docker/daemon.json<<EOF
+            {
+            "insecure-registries": [
+            "172.30.0.0/16"
+            ]
+       }
+      EOF
+
+> Restart Docker and enable 
+ cmds: systemctl daemon-reload,  systemctl restart docker and systemctl enable docker.
+
+>  Download OC Library 
+   cmd: wget link to use
+   cmd: tar -xvf openshift-origin*.tar.gz
+   cmd: cd openshift-origin-client*/
+
+ > Move oc and kubectl binaries to /usr/local/bin
+    cmd: mv  oc kubectl  /usr/local/bin/
+ Note: run cmd: oc version
+
+> Starting oc cluster
+  cmd: oc cluster up ( local installs)
+         : oc cluster up --public-hostname=(ipaddr)  - using public ip/ hostname
+
+> Run cluster status after successful cluster setup
+  cmd: oc cluster status
+
+Note: use default credentials to login
+> UI will be accessible via https://<IP|Hostname>:8443/console
+
+3) Installing AWX Tower on OKD cluster 
+
+Pre-Steps: 
+Create a project on Openshift cluster for AWX Installation.
+Create a postgresql pod using latest image and set username/password.
+Basic understanding of openshift
+Download project from https://github.com/ansible/awx/releases/tag/17.1.0
+
+>  move it to /opt directory
+
+> cmd: tar -xvf 17.1.0.tar.gz
+
+> cmd: cd awx-17.1.0/installer
+
+Here look for inventory file
+
+Note: Openshift configuration and default values need to be specified for the tower installer to work
+
+Please look here for sample inventory file Inventory Sample
+** Need to add cluster admin role to username that we are specifying in inventory file
+cmd: oc adm policy add-cluster-role-to-user cluster-admin system
+
+Running installer
+
+cmd: ansible-playbook -i inventory install.yml
+
+Once the installer is completed, go to overview in Openshift UI and look for AWX accessible url above ‘awx’ pod.
+
+Grab the url and login using default username and password passed within the inventory file.
+
+4) Installing sensu ( Launch  a new instance for sensu)
+
+ Instance configuration:
+CPU: 2 vCPUs
+Memory: 8
+Disk Space: 50 GB
+OS: CentOS 7
+
+   > Sensu -Backend:
+   cmd: curl -s https://packagecloud.io/install/repositories/sensu/stable/script.rpm.sh | sudo bash
+   cmd: yum install sensu-go-backend -y
+   cmd: cd /etc/sensu/
+   cmd: systemctl start sensu-backend
+   cmd: systemctl enable sensu-backend
+
+ > Modify backend.yml file in /etc/sensu and restart sensu-backend again.
+
